@@ -11,6 +11,8 @@
 #include <iostream>
 #include <fstream>
 #include "GameWindow.h"
+#include "Sprite.h"
+#include "GLSLProgram.h"
 
 namespace AcsGameEngine {
 
@@ -20,13 +22,16 @@ namespace AcsGameEngine {
         MainGame(const MainGame &orig) = delete;
         virtual ~MainGame();
         void run();
-        
-        std::shared_ptr<GameWindow> getWindow() const noexcept {
+
+        GameWindow &getWindow() noexcept {
             return m_window;
         }
 
     private:
+        Sprite m_sprite;
+
         void initSystems();
+        void initShaders();
         void gameLoop();
         void processInput();
         void drawGame();
@@ -49,7 +54,9 @@ namespace AcsGameEngine {
         }
         
         GameState m_gameState = GameState::play;
-        std::shared_ptr<GameWindow> m_window;
+        GameWindow m_window;
+
+        GLSLProgram m_colourProgram;
     };
 }
 #endif /* GAME_H */

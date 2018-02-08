@@ -4,6 +4,8 @@ namespace AcsGameEngine {
 
     MainGame::MainGame() {
         initSystems();
+
+        m_sprite.init(-1.0f, -1.0f, 1.0f, 1.0f);
     }
 
     MainGame::~MainGame() {
@@ -19,8 +21,6 @@ namespace AcsGameEngine {
     }
 
     void MainGame::initSystems() {
-        m_window = std::make_shared<GameWindow>();
-
         if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
             throw std::runtime_error(std::string{"Unable to initialize SDL: "}
             +std::string{SDL_GetError()});
@@ -32,9 +32,9 @@ namespace AcsGameEngine {
             +std::string{IMG_GetError()});
         }
 
-        m_window->open();
+        m_window.open();
 
-        SDL_GLContext glContext = SDL_GL_CreateContext(m_window->getWindow());
+        SDL_GLContext glContext = SDL_GL_CreateContext(m_window.getWindow());
         if (glContext == nullptr) {
             writeToLog(std::string{"SDL_GL context could not be created: "}
             +SDL_GetError());
@@ -46,9 +46,21 @@ namespace AcsGameEngine {
             throw std::runtime_error("Could not initialize glew");
         }
 
+        //Have two windows (hidden) to avoid flickering
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-        glClearColor(0.0f,0.0f, 1.0f, 1.0f);
+
+        //Set clear colour, this one is Blue
+        glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+
+        initShaders();
     }
+
+    void MainGame::initShaders() {
+        m_colourProgram.compileShaders("../src/Shaders/colourShading.vert", "../src/Shaders/colourShading.vert");
+        m_colourProgram.addAttribute("vertexPosition");
+        m_colourProgram.linkShaders();
+    }
+
 
     void MainGame::gameLoop() {
         while (m_gameState != GameState::exit) {
@@ -58,15 +70,22 @@ namespace AcsGameEngine {
     }
 
     void MainGame::processInput() {
-        SDL_Event e;
+        SDL_Event event;
 
-        while (SDL_PollEvent(&e)) {
-            switch (e.type) {
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
                 case SDL_QUIT:
                     m_gameState = GameState::exit;
                     break;
                 case SDL_MOUSEMOTION:
                     //std::cout << e.motion.x << " " << e.motion.y << '\n';
+                    break;
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.sym) {
+                        case SDLK_ESCAPE:
+                            m_gameState = GameState::exit;
+                            break;
+                    }
                     break;
             }
         }
@@ -76,7 +95,13 @@ namespace AcsGameEngine {
         glClearDepth(1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        SDL_GL_SwapWindow(m_window->getWindow());
+        m_colourProgram.use();
+
+        m_sprite.draw();
+
+        m_colourProgram.unuse();
+
+        SDL_GL_SwapWindow(m_window.getWindow());
     }
 }
 

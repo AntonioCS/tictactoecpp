@@ -6,7 +6,7 @@ int main(int argc, char** argv) {
 
     AcsGameEngine::MainGame game;
 
-    game.getWindow()->setTitle("Tic Tac Toe"); 
+    game.getWindow().setTitle("Tic Tac Toe");
 
     game.run();
 
