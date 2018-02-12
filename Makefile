@@ -23,7 +23,6 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(dir_guard)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-	cp -R $(SRC_DIR)/Shaders $(BUILD_DIR)
 
 #To cause recompile when .h files are change
 $(OBJ):	$(SRC)
