@@ -68,7 +68,7 @@ namespace AcsGameEngine {
             applyNewSize();
         }
 
-        SDL_Window *getWindow() {
+        SDL_Window *getWindow() const {
             return m_window;
         }
 
