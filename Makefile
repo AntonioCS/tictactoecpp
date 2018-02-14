@@ -7,8 +7,7 @@ TARGET=$(BUILD_DIR)/$(BIN)
 CXXFLAGS=-std=c++1z -Wall -g -Werror
 LDFLAGS=
 #No -mwindows so that I can output to console
-#LDLIBS=-Dmain=SDL_main -IC:/msys64/mingw64/include/SDL2 -IC:/msys64/mingw64/include -LC:/msys64/mingw64/lib -lSDL2_ttf -lSDL2_image -lmingw32 -lSDL2main -lSDL2 -lglew32
-LDLIBS=`pkg-config --libs --cflags sdl2 SDL2_ttf SDL2_image glew` -lopengl32
+LDLIBS:=$(shell pkg-config --libs --cflags sdl2 SDL2_ttf SDL2_image glew) -lopengl32
 CXX=g++
 SRC_DIR=./src
 SRC=$(shell find $(SRC_DIR) -name '*.cpp')
@@ -22,6 +21,9 @@ dir_guard=@mkdir -p $(@D)
 .PHONY: clean
 
 all: $(TARGET)
+
+debug: LDLIBS:=$(filter-out -mwindows, $(LDLIBS))
+debug: $(TARGET)
 
 #%.o : %.cpp
 #	$(CXX) $(CXXFLAGS) -c $< -o $(OBJ_DIR)/$@
