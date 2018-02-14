@@ -2,6 +2,8 @@ BIN=game_tictactoe
 BUILD_DIR=./build
 OBJ_DIR=./obj
 TARGET=$(BUILD_DIR)/$(BIN)
+#-MD Produces path to .h files
+#CXXFLAGS=-std=c++1z -Wall -g -Werror -MD
 CXXFLAGS=-std=c++1z -Wall -g -Werror
 LDFLAGS=
 #No -mwindows so that I can output to console
@@ -12,7 +14,8 @@ SRC_DIR=./src
 SRC=$(shell find $(SRC_DIR) -name '*.cpp')
 HEADERS=$(shell find $(SRC_DIR) -name '*.h')
 #https://www.gnu.org/software/make/manual/html_node/Text-Functions.html
-OBJ=$(addprefix $(OBJ_DIR)/,$(notdir $(patsubst %.cpp, %.o, $(SRC))))
+#OBJ:=$(addprefix $(OBJ_DIR)/,$(notdir $(patsubst %.cpp, %.o, $(SRC))))
+OBJ:=$(addprefix $(OBJ_DIR)/,$(patsubst %.cpp, %.o, $(subst ./,,$(SRC)) ))
 #http://stackoverflow.com/a/1951111/8715
 dir_guard=@mkdir -p $(@D)
 
@@ -20,16 +23,46 @@ dir_guard=@mkdir -p $(@D)
 
 all: $(TARGET)
 
+#%.o : %.cpp
+#	$(CXX) $(CXXFLAGS) -c $< -o $(OBJ_DIR)/$@
+
 $(TARGET): $(OBJ)
 	$(dir_guard)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	cp -r assets/ $(BUILD_DIR);
 
-#To cause recompile when .h files are change
-$(OBJ):	$(SRC)
-#$(HEADERS)
-	$(dir_guard)
-	$(CXX) $(CXXFLAGS) -c $? $(LDLIBS)
-#Put all the object files in the correct directory
-	@mv *.o $(OBJ_DIR)
+./obj/src/AcsGameEngine/GameWindow.o: ./src/AcsGameEngine/GameWindow.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+./obj/src/AcsGameEngine/MainGame.o: ./src/AcsGameEngine/MainGame.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+./obj/src/AcsGameEngine/Renderer.o: ./src/AcsGameEngine/Renderer.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+./obj/src/AcsGameEngine/Sprite.o: ./src/AcsGameEngine/Sprite.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+./obj/src/AcsGameEngine/State.o: ./src/AcsGameEngine/State.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+./obj/src/AcsGameEngine/Texture.o: ./src/AcsGameEngine/Texture.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+./obj/src/AcsGameEngine/TextureManager.o: ./src/AcsGameEngine/TextureManager.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+./obj/src/AcsGameEngine/Util/ColorList.o: ./src/AcsGameEngine/Util/ColorList.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+./obj/src/main.o: ./src/main.cpp
+		mkdir -p $(dir $@)
+		$(CXX) $(CXXFLAGS) -o $@ -c $< $(LDLIBS)
+
+#$(OBJ) : $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
+#	echo $<
+#@mkdir -p
+#$(CXX) $(CXXFLAGS) -c $< -o $(OBJ_DIR)/$@
+
 clean:
 	rm -rf $(BUILD_DIR)/* $(OBJ_DIR)/*
