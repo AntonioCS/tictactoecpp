@@ -8,11 +8,13 @@
 #include <memory>
 #include <functional>
 #include <unordered_map>
+#include <optional>
 
 //#include "AcsGameEngine/GameWindow.h"
 //#include "AcsGameEngine/Renderer.h"
 
 bool running = true;
+bool playable = true;
 SDL_Window *window;
 SDL_Renderer *renderer;
 constexpr int win_w = 800;
@@ -24,6 +26,9 @@ constexpr int board_y = win_h / 2 - board_h / 2 + 50;
 SDL_Rect cross{654, 0, 95, 117};
 SDL_Rect circle{ 654, 120, 95, 120};
 SDL_Rect turnText{ 654, 240, 36, 99};
+SDL_Rect winText{ 701, 240, 36, 160};
+SDL_Rect drawText{ 654, 342, 36, 114};
+constexpr const char *assets = "assets/board_items.png";
 
 enum class Type {
     cross,
@@ -82,7 +87,8 @@ public:
     }
 };
 
-std::array<Spot, 9> spots;
+constexpr uint8_t total_spots{9};
+std::array<Spot, total_spots> spots;
 
 bool isInsideBoard(int x, int y) {
     return x >= board_x && x <= board_w + board_x && y >= board_y && y <= board_h + board_y;
@@ -177,23 +183,89 @@ void drawCircle(SDL_Texture *all, int x, int y, SDL_Rect *dest = nullptr) {
     SDL_RenderCopy(renderer, all, &a, dest);
 }
 
+void displayItem(SDL_Texture *all, SDL_Rect *source, int y = 0) {
+    int x = win_w / 2 - source->w / 2;
+    //y = y - source->h/2;
+    SDL_Rect b{x, y, source->w, source->h};
+
+    SDL_RenderCopyEx(renderer, all, source, &b, -90, nullptr, SDL_FLIP_NONE);
+
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);    
+    SDL_RenderDrawRect(renderer, &b);
+}
+
 void displayTurn(SDL_Texture *all) {
-    int x = win_h / 2 - 36 / 2;
-    int y = 20;
-    SDL_Rect turnText{ 654, 240, 36, 99};
-    SDL_Rect b{x, y, turnText.w, turnText.h};
-
-    SDL_RenderCopyEx(renderer, all, &turnText, &b, -90, nullptr, SDL_FLIP_NONE);
-    SDL_Rect turnItem{x + turnText.h, y + turnText.h / 2 - 15, 30, 30};
-
+    displayItem(all, &turnText, 10);
+    int y = 10;
+    SDL_Rect turnItem{win_w / 2 - turnText.w / 2 , y+ turnText.h, y + turnText.h / 2 - 15, 30};
     turn == Type::circle ? drawCircle(all, 1, 1, &turnItem) : drawCross(all, 1, 1, &turnItem);
 }
 
-void drawStuff(SDL_Texture *all) {
-    drawBoard(all);
+void displayWinner(SDL_Texture *all) {
+    displayItem(all, &winText);
 
+    //int x = win_w / 2 - winText.w / 2;
+    //int y = 5;
+    //SDL_Rect b{x, y, winText.w, winText.h};
+
+    //SDL_RenderCopyEx(renderer, all, &winText, &b, -90, nullptr, SDL_FLIP_NONE);    
+
+    //turn == Type::circle ? drawCircle(all, 1, 1, &turnItem) : drawCross(all, 1, 1, &turnItem);
+}
+
+void displayDraw(SDL_Texture *all) {
+    displayItem(all, &drawText);
+}
+
+std::optional<Type> checkForWin() {
+    constexpr uint8_t total_combinations{8};
+    constexpr uint8_t winN{3};
+
+    constexpr std::array<std::array<int, winN>, total_combinations> winningCombinations{
+        {
+            {
+                0, 1, 2
+            },
+            {
+                3, 4, 5
+            },
+            {
+                6, 7, 8
+            },
+            {
+                0, 3, 6
+            },
+            {
+                1, 4, 7
+            },
+            {
+                2, 5, 8
+            },
+            {
+                0, 4, 8
+            },
+            {
+                2, 4, 6
+            }
+        }};
+
+    for (const auto &comb : winningCombinations) {
+        if (spots[comb[0]].isClicked() && spots[comb[1]].isClicked() && spots[comb[2]].isClicked() &&
+                spots[comb[0]].getType() == spots[comb[1]].getType() && spots[comb[1]].getType() == spots[comb[2]].getType()) {
+
+            return spots[comb[0]].getType();
+        }
+    }
+
+    return {};
+}
+
+void drawStuff(SDL_Texture *all) {
+    int spots_taken = 0;
+    drawBoard(all);
     for (const auto &spot : spots) {
         if (spot.isClicked()) {
+            spots_taken++;
             auto coords = spot.getDrawXY();
 
             if (spot.getType() == Type::circle) {
@@ -201,6 +273,31 @@ void drawStuff(SDL_Texture *all) {
             } else {
                 drawCross(all, coords.first, coords.second);
             }
+        }
+
+        //SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        //SDL_RenderDrawRect(renderer, &(spot.getRect()));
+
+    }
+
+    auto res = checkForWin();
+
+    if (res.has_value()) {
+        displayWinner(all);
+        playable = false;
+        /*   
+            std::cout << "VITORIA!! ";
+            if (res.value() == Type::cross) {
+                std::cout << "das cruzes\n";
+            } else {
+                std::cout << "dos circulos\n";
+            }*/
+    } else {
+        if (spots_taken == total_spots) {
+            displayDraw(all);
+            playable = false;
+        } else {
+            displayTurn(all);
         }
     }
 }
@@ -228,6 +325,7 @@ void resetGame() {
         }
     }
     turn = Type::circle;
+    playable = true;
 }
 
 int main(int argc, char** argv) {
@@ -257,7 +355,7 @@ int main(int argc, char** argv) {
     uint32_t frameStart;
     int frameTime;
 
-    SDL_Surface *tmp = IMG_Load("assets/board_items2.png");
+    SDL_Surface *tmp = IMG_Load(assets);
     SDL_Texture *all = SDL_CreateTextureFromSurface(renderer, tmp);
     SDL_FreeSurface(tmp);
 
@@ -273,19 +371,24 @@ int main(int argc, char** argv) {
     em.onKeyDown([](SDL_Event & e) {
         if (e.key.keysym.sym == SDLK_ESCAPE)
             running = false;
-        if (e.key.keysym.sym == SDLK_RETURN)
+        if (e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_RETURN2)
             resetGame();
+        if (e.key.keysym.sym == SDLK_1) {
+            //spots[0].
+        }
     });
 
     em.onMouseClick([](SDL_Event & event) {
+        if (!playable)
+            return;
+
         if (event.button.button == SDL_BUTTON_LEFT) {
             int x = event.button.x;
             int y = event.button.y;
 
             if (isInsideBoard(x, y)) {
                 for (auto &spot : spots) {
-                    if (spot.isInsideArea(x, y)) {
-                        //std::cout << "inside area\n";
+                    if (spot.isInsideArea(x, y)) {                        
                         if (spot.isClicked() == false) {
                             const SDL_Rect &r = spot.getRect();
                             if (turn == Type::circle) {
@@ -316,7 +419,7 @@ int main(int argc, char** argv) {
 
         if (em.isKeyPressed(SDL_SCANCODE_KP_ENTER)) {
             //            text_x++;
-            std::cout << "MERDa\n";
+           // std::cout << "MERDa\n";
         }
 
         if (em.isKeyPressed(SDL_SCANCODE_LEFT)) {
@@ -330,8 +433,6 @@ int main(int argc, char** argv) {
         if (em.isKeyPressed(SDL_SCANCODE_DOWN)) {
             //      text_y++;
         }
-
-        displayTurn(all);
 
         drawStuff(all);
 
