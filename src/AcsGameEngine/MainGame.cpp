@@ -3,8 +3,10 @@
 
 namespace AcsGameEngine {
 
+    std::shared_ptr<Renderer> MainGame::m_renderer2;
+
     MainGame::MainGame() {
-        initSystems();    
+        initSystems();
     }
 
     MainGame::~MainGame() {
@@ -33,28 +35,79 @@ namespace AcsGameEngine {
 
         m_window.open();
         m_renderer = std::make_shared<Renderer>(m_window);
-        //m_renderer->DrawColor(m_color.red);
-        m_renderer->DrawColor(0, 0, 0);
-    }
+        m_renderer2 = m_renderer;
+        //m_renderer->DrawColor(ColorList::blue);
 
+    }
 
     void MainGame::gameLoop() {
+
+
+
+        /*
+        auto t = make_texture("assets/TicTacToe.jpg");
+        Sprite board{t, 0, 0, 424, 364};
+        Sprite circle{t, 448, 4, 118, 114};
+        Sprite cross{t, 448, 131, 121, 114};
+         */
+        auto t = make_texture("assets/board_items.png");
+        Sprite board{t, 0, 0, 650, 480};
+        Sprite circle{t, 650, 120, 95, 120};
+        Sprite cross{t, 650, 0, 95, 117};
+
+        board.setCenter();
+        cross.setDestinationXY(0, 400);
+        circle.setDestinationXY(200, 400);
+
         while (m_gameState != GameState::exit) {
+            m_frameStart = SDL_GetTicks();
+
             processInput();
-            drawGame();
+            update();
+
+            m_renderer->Clear(ColorList::blue);
+
+            m_em.draw();
+            board.draw();
+            //cross.draw();
+            //circle.draw();
+
+
+            m_renderer->Present();
+
+
+
+            //drawGame();
+
+            m_frameTime = SDL_GetTicks() - m_frameStart;
+
+            if (frameDelay > m_frameTime) {
+                SDL_Delay(frameDelay - m_frameTime);
+            }
         }
     }
+
+    //Another name handleEvents
 
     void MainGame::processInput() {
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
+            //https://wiki.libsdl.org/SDL_Event
             switch (event.type) {
+                    //https://wiki.libsdl.org/SDL_EventType
                 case SDL_QUIT:
                     m_gameState = GameState::exit;
                     break;
                 case SDL_MOUSEMOTION:
                     //std::cout << e.motion.x << " " << e.motion.y << '\n';
+                    break;
+                case SDL_MOUSEBUTTONUP:
+                    std::cout << "MouseUp\n";
+                    if (event.button.button == SDL_BUTTON_LEFT) {
+                        std::cout << "Left was release\n";
+                    }
+
                     break;
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
@@ -67,11 +120,20 @@ namespace AcsGameEngine {
         }
     }
 
+    void MainGame::update() {
+
+    }
+
     void MainGame::drawGame() {
         m_renderer
-                ->Clear().
-                Present()
+                ->Clear()
+                .Present()
                 ;
+    }
+
+    Texture MainGame::make_texture(const std::string &path) {
+        Texture t(*m_renderer, path);
+        return t;
     }
 }
 
