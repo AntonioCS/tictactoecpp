@@ -1,6 +1,7 @@
 #include "Sprite.h"
 #include "Texture.h"
 #include "Renderer.h"
+#include "Window.h"
 
 namespace AcsGameEngine {
 
@@ -10,6 +11,7 @@ namespace AcsGameEngine {
 
     Sprite::Sprite(const Texture &texture, int x, int y, int w, int h) : Sprite(texture) {
         setSourceXYWH(x, y, w, h);
+        setDestinationXYWH(x, y, w, h);
     }
 
     Sprite::Sprite(const Texture &texture, int sx, int sy, int sw, int sh, int dx, int dy, int dw, int dh) : Sprite(texture, sx, sy, sw, sh) {
@@ -61,10 +63,24 @@ namespace AcsGameEngine {
         m_destination.h = h;
     }
 
+    void Sprite::setCenter() {
+        //const GameWindow &win = m_texture.getRenderer().getWindow();
+        //To get the &
+		auto &win = m_texture.getRenderer().getWindow();
+        auto win_center_w = win.getWidth() / 2;
+        auto win_center_h = win.getHeight() / 2;
+
+        m_destination.x = win_center_w - (m_source.w / 2);
+        m_destination.y = win_center_h - (m_source.h / 2);
+    }
+
     void Sprite::draw() {
-        SDL_Renderer *r = m_texture.getRenderer().getRenderer();
+		SDL_Renderer *r = m_texture.getRenderer().getRawPointer();
         SDL_Texture *t = m_texture.getTexture();
 
         SDL_RenderCopy(r, t, &m_source, &m_destination);
     }
-}
+	void Sprite::border()
+	{
+	}
+} // namespace AcsGameEngine
